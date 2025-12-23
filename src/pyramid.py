@@ -20,13 +20,8 @@ def create_gaussian_pyramid(
         list: Reduced image lists [I_0, I_-1, I_-2, ...]
     """
     
-    pyramid = []
-    current_img = image.copy()
-    pyramid.append(current_img)
-    
-    #sigma = np.sqrt(scale_factor**2 - 1)
-    
-    print(f"Pyramid Level 0: {current_img.shape}")
+    pyramid = [image.astype(np.float32)]
+    current_img = image.astype(np.float32)
     
     for i in range(1, max_depth + 1):
         h, w = current_img.shape
@@ -39,11 +34,9 @@ def create_gaussian_pyramid(
         if new_h < min_size or new_w < min_size:
             break
         
-        #in paper it is Blur and Sample
-        #with cv2.resize INTER_CUBIC it does smoothing and reducing well.
-        #if there is need, we can make first gaussian blur after that reduce.
-        #blurred = cv2.GaussianBlur(current_img, (0, 0), sigmaX=sigma, sigmaY=sigma)
-        current_img = cv2.resize(current_img, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+        sigma = np.sqrt(scale_factor**2 - 1.0)
+        blurred = cv2.GaussianBlur(current_img, (0, 0), sigmaX=sigma, sigmaY=sigma)
+        current_img = cv2.resize(blurred, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
         
         pyramid.append(current_img)
         print(f"Pyramid Level -{i}: {current_img.shape}")

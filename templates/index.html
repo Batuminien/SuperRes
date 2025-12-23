@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="{{ url_for('static', filename='assets/logo.ico') }}" type="image/x-icon">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='assets/logo.ico') }}" type="image/x-icon">
+  <title>Super-Resolution Demo</title>
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+  <div class="max-w-3xl mx-auto px-6 py-10">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Logo -->
+        <img
+          src="{{ url_for('static', filename='assets/logo.png') }}"
+          alt="Logo"
+          class="h-8 w-auto select-none"
+        />
+        <h1 class="text-2xl font-semibold tracking-tight">Super-Resolution</h1>
+      </div>
+
+      <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-200">Version 1.3</span>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mt-6 space-y-2">
+          {% for m in messages %}
+            <div class="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200">
+              {{ m }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form id="srForm" class="mt-8 space-y-6" action="/run" method="post" enctype="multipart/form-data">
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+        <label class="block text-sm font-medium text-zinc-200">Upload Image</label>
+        <input name="image" type="file" accept="image/*"
+               class="mt-2 block w-full text-sm text-zinc-200 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-zinc-100 hover:file:bg-zinc-700" />
+        <p class="mt-2 text-xs text-zinc-400">PNG/JPG/JPEG/WEBP</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <!-- Method -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+          <label class="block text-sm font-medium text-zinc-200">Method</label>
+          <select name="method"
+                  class="mt-2 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm">
+            <option value="classical">Classical + Example Based SR</option>
+            <option value="wavelet">Wavelet</option>
+            <option value="other">Ebrar</option>
+          </select>
+          <p class="mt-2 text-xs text-zinc-400">For now, only Classical+Example Based SR is working.</p>
+        </div>
+
+        <!-- Metric -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-zinc-200">Metric</p>
+              <p class="text-xs text-zinc-400">Calculate PSNR/SSIM</p>
+            </div>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+              <input name="metric" type="checkbox" class="h-4 w-4 accent-zinc-200" />
+              <span class="text-sm text-zinc-200">On</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Scale -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+          <label class="block text-sm font-medium text-zinc-200">Scale</label>
+          <select name="scale"
+                  class="mt-2 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm">
+            <option value="2" selected>×2</option>
+            <option value="3">×3</option>
+            <option value="4">×4</option>
+          </select>
+          <p class="mt-2 text-xs text-zinc-400">It is recommended to use x2. With larger targets, the process may take longer.</p>
+        </div>
+      </div>
+
+      <button id="runBtn" type="submit"
+              class="w-full rounded-xl bg-zinc-100 text-zinc-950 py-3 text-sm font-semibold hover:bg-white">
+        Run
+      </button>
+    </form>
+
+    <p class="mt-8 text-xs text-zinc-500">
+      • The outputs are saved under <code>static/results/</code>.
+    </p>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50">
+    <div class="h-full w-full flex items-center justify-center">
+      <div class="rounded-2xl border border-zinc-800 bg-zinc-950 px-6 py-5 text-center">
+        <div class="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-200"></div>
+        <p class="mt-4 text-sm text-zinc-200">Being processed...</p>
+        <p class="mt-1 text-xs text-zinc-400">This may take some time</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("srForm");
+    const overlay = document.getElementById("loadingOverlay");
+    const btn = document.getElementById("runBtn");
+
+    form.addEventListener("submit", function() {
+      overlay.classList.remove("hidden");
+      btn.disabled = true;
+      btn.classList.add("opacity-70", "cursor-not-allowed");
+    });
+  </script>
+</body>
+</html>

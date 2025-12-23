@@ -53,3 +53,39 @@ def imsave_normalized(path, img):
     img_uint8 = (np.clip(img, 0, 1) * 255).astype(np.uint8)
     img_bgr = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2BGR)
     cv2.imwrite(path, img_bgr)
+    
+import cv2
+import numpy as np
+
+def degrade_gaussian_subsample(hr_img, scale=2, sigma=None):
+    """
+    Glasner tarzı degrade:
+      L = (H * G_sigma) ↓ scale
+
+    Parametreler:
+      hr_img : 2D array (tek kanal, 0-1 float)
+      scale  : downscale faktörü (örn. 2)
+      sigma  : Gaussian std. dev. (None ise teorik s^2-1'dan türetiriz)
+
+    Çıktı:
+      lr_img : 2D array, blur + subsample edilmiş
+    """
+
+    hr = hr_img.astype(np.float32)
+    h, w = hr.shape
+
+    if sigma is None:
+        # Glasner tarzı: s^2 - 1'dan türetilmiş sigma
+        sigma = np.sqrt(scale ** 2 - 1.0)
+
+    # 1) Gaussian blur
+    if sigma > 1e-6:
+        blurred = cv2.GaussianBlur(hr, (0, 0),
+                                   sigmaX=sigma, sigmaY=sigma)
+    else:
+        blurred = hr
+
+    # 2) Subsample (decimation)
+    lr = blurred[::scale, ::scale]
+
+    return lr

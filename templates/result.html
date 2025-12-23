@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="icon" href="{{ url_for('static', filename='assets/logo.ico') }}" type="image/x-icon">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='assets/logo.ico') }}" type="image/x-icon">
+
+  <title>SR Result</title>
+
+  <style>
+    body[data-view="fit"] .sr-img { width: 100%; max-width: 100%; height: auto; }
+    body[data-view="oneToOne"] .sr-img { width: auto; max-width: none; height: auto; }
+
+    .cmp-img {
+      width: 100%;
+      height: auto;
+      max-height: 70vh;
+      object-fit: contain;
+      display: block;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid #27272a;
+      background: #09090b;
+    }
+    .icon-btn:hover { background: #18181b; }
+    .icon-img { width: 18px; height: 18px; display: block; opacity: 0.95; }
+  </style>
+</head>
+
+<body data-view="fit" class="bg-zinc-950 text-zinc-100 min-h-screen">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex items-center gap-3">
+        <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo" class="h-8 w-auto select-none" />
+        <h1 class="text-2xl font-semibold tracking-tight">Results</h1>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="flex rounded-xl border border-zinc-800 overflow-hidden">
+          <button id="btnOne" class="px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800">1:1</button>
+          <button id="btnFit" class="px-3 py-2 text-sm bg-zinc-100 text-zinc-950 font-semibold">Fit</button>
+        </div>
+        <a href="/" class="text-sm text-zinc-300 hover:text-white underline underline-offset-4">New Job</a>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+      <div class="flex flex-wrap items-center gap-2 text-sm text-zinc-300">
+        <span class="px-2 py-1 rounded-full bg-zinc-800 text-zinc-200 text-xs">Job: {{ result.job_id }}</span>
+
+        {% if result.method %}
+          <span class="px-2 py-1 rounded-full bg-zinc-800 text-zinc-200 text-xs">Method: {{ result.method }}</span>
+        {% endif %}
+
+        {% if result.scale %}
+          <span class="px-2 py-1 rounded-full bg-zinc-800 text-zinc-200 text-xs">Scale: ×{{ result.scale }}</span>
+        {% endif %}
+
+        {% if result.use_degradation %}
+          <span class="px-2 py-1 rounded-full bg-emerald-900/40 border border-emerald-800 text-emerald-200 text-xs">Metric ON</span>
+        {% else %}
+          <span class="px-2 py-1 rounded-full bg-zinc-800 text-zinc-200 text-xs">Metric OFF</span>
+        {% endif %}
+      </div>
+
+      {% if result.message %}
+        <div class="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-200">
+          {{ result.message }}
+        </div>
+      {% endif %}
+
+      {% if result.metrics %}
+        <div class="mt-5 grid md:grid-cols-2 gap-4">
+          <!-- Bicubic -->
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold text-zinc-200">Bicubic</p>
+              <span class="text-xs px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">Metrics</span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+                <p class="text-xs text-zinc-400">PSNR</p>
+                <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.2f"|format(result.metrics.bicubic.psnr) }}
+                  <span class="text-sm text-zinc-400">dB</span></p>
+              </div>
+              <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+                <p class="text-xs text-zinc-400">SSIM</p>
+                <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.4f"|format(result.metrics.bicubic.ssim) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Our SR -->
+          <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold text-zinc-200">Our SR</p>
+              <span class="text-xs px-2 py-1 rounded-full bg-emerald-900/30 border border-emerald-800 text-emerald-200">Metrics</span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <div class="rounded-xl border border-emerald-900/60 bg-zinc-900/40 px-4 py-3">
+                <p class="text-xs text-zinc-400">PSNR</p>
+                <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.2f"|format(result.metrics.ours.psnr) }}
+                  <span class="text-sm text-zinc-400">dB</span></p>
+              </div>
+              <div class="rounded-xl border border-emerald-900/60 bg-zinc-900/40 px-4 py-3">
+                <p class="text-xs text-zinc-400">SSIM</p>
+                <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.4f"|format(result.metrics.ours.ssim) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Compare panel (Input / LR / Bicubic / Our SR) -->
+    {% if result.ours %}
+      <div class="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p class="text-sm font-medium text-zinc-200">Compare</p>
+            <p class="text-xs text-zinc-400">One-click change • Press and hold: Input • Download selected</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <span id="cmpDims" class="text-xs text-zinc-500">—</span>
+
+            <button type="button" id="btnDownloadSelected" class="icon-btn" title="Seçili görseli indir">
+              <!-- download icon (inline svg) -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+
+            <div class="flex rounded-xl border border-zinc-800 overflow-hidden">
+              <button type="button" id="btnCmpInput"
+                      class="px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800">
+                Input
+              </button>
+
+              {% if result.lr_degraded %}
+                <button type="button" id="btnCmpLR"
+                        class="px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800">
+                  LR
+                </button>
+              {% endif %}
+
+              {% if result.bicubic %}
+                <button type="button" id="btnCmpBicubic"
+                        class="px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800">
+                  Bicubic
+                </button>
+              {% endif %}
+
+              <button type="button" id="btnCmpOurs"
+                      class="px-3 py-2 text-sm bg-zinc-100 text-zinc-950 font-semibold">
+                Our SR
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 rounded-lg border border-zinc-800 bg-black/20 overflow-auto">
+          <img
+            id="cmpImg"
+            class="cmp-img"
+            src="{{ url_for('static', filename=result.ours) }}"
+
+            data-url-input="{{ url_for('static', filename=result.input) }}"
+            {% if result.lr_degraded %}
+              data-url-lr="{{ url_for('static', filename=result.lr_degraded) }}"
+            {% endif %}
+            {% if result.bicubic %}
+              data-url-bicubic="{{ url_for('static', filename=result.bicubic) }}"
+            {% endif %}
+            data-url-ours="{{ url_for('static', filename=result.ours) }}"
+
+            data-job="{{ result.job_id }}"
+            data-kind="ours"
+            alt="compare"
+          />
+        </div>
+
+        <p class="mt-3 text-xs text-zinc-500">
+          Tip: Press and hold on the image to preview Input instantly.
+        </p>
+      </div>
+    {% endif %}
+
+    <!-- Grid images -->
+    {% if result.lr_degraded and result.bicubic %}
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <!-- Input -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-zinc-200">Input</p>
+            <span class="sr-dim text-xs text-zinc-400" data-for="img-input">—</span>
+          </div>
+          <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+            <img id="img-input" class="sr-img block" src="{{ url_for('static', filename=result.input) }}" alt="input" />
+          </div>
+        </div>
+
+        <!-- LR degraded -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-zinc-200">LR (degraded)</p>
+            <span class="sr-dim text-xs text-zinc-400" data-for="img-lr">—</span>
+          </div>
+          <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+            <img id="img-lr" class="sr-img block" src="{{ url_for('static', filename=result.lr_degraded) }}" alt="lr-degraded" />
+          </div>
+        </div>
+
+        <!-- Bicubic -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-zinc-200">Bicubic</p>
+            <span class="sr-dim text-xs text-zinc-400" data-for="img-bicubic">—</span>
+          </div>
+          <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+            <img id="img-bicubic" class="sr-img block" src="{{ url_for('static', filename=result.bicubic) }}" alt="bicubic" />
+          </div>
+        </div>
+
+        <!-- Our SR -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-zinc-200">Our SR</p>
+            <span class="sr-dim text-xs text-zinc-400" data-for="img-ours">—</span>
+          </div>
+          <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+            <img id="img-ours" class="sr-img block" src="{{ url_for('static', filename=result.ours) }}" alt="ours" />
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="mt-8 grid md:grid-cols-3 gap-4">
+        <!-- Input -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-zinc-200">Input</p>
+            <span class="sr-dim text-xs text-zinc-400" data-for="img-input">—</span>
+          </div>
+          <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+            <img id="img-input" class="sr-img block" src="{{ url_for('static', filename=result.input) }}" alt="input" />
+          </div>
+        </div>
+
+        {% if result.bicubic %}
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-zinc-200">Bicubic</p>
+              <span class="sr-dim text-xs text-zinc-400" data-for="img-bicubic">—</span>
+            </div>
+            <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+              <img id="img-bicubic" class="sr-img block" src="{{ url_for('static', filename=result.bicubic) }}" alt="bicubic" />
+            </div>
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-medium text-zinc-200">Bicubic</p>
+            </div>
+            <div class="mt-3 rounded-lg border border-zinc-800 bg-zinc-950 p-6 text-sm text-zinc-400">
+              No output yet.
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Our SR -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-zinc-200">Our SR</p>
+            <span class="sr-dim text-xs text-zinc-400" data-for="img-ours">—</span>
+          </div>
+          <div class="mt-3 max-h-[520px] overflow-auto rounded-lg border border-zinc-800 bg-zinc-950">
+            <img id="img-ours" class="sr-img block" src="{{ url_for('static', filename=result.ours) }}" alt="ours" />
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <script>
+    // ---------- Global view toggle ----------
+    const btnFit = document.getElementById("btnFit");
+    const btnOne = document.getElementById("btnOne");
+
+    function setView(mode) {
+      document.body.setAttribute("data-view", mode);
+      if (mode === "fit") {
+        if (btnFit) btnFit.className = "px-3 py-2 text-sm bg-zinc-100 text-zinc-950 font-semibold";
+        if (btnOne) btnOne.className = "px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800";
+      } else {
+        if (btnOne) btnOne.className = "px-3 py-2 text-sm bg-zinc-100 text-zinc-950 font-semibold";
+        if (btnFit) btnFit.className = "px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800";
+      }
+    }
+    setView("fit");
+    if (btnFit) btnFit.addEventListener("click", function(){ setView("fit"); });
+    if (btnOne) btnOne.addEventListener("click", function(){ setView("oneToOne"); });
+
+    // ---------- Grid dimension labels ----------
+    function updateDims(imgId) {
+      const img = document.getElementById(imgId);
+      if (!img) return;
+
+      const selector = '.sr-dim[data-for="' + imgId + '"]';
+      const label = document.querySelector(selector);
+      if (!label) return;
+
+      const apply = function() {
+        if (img.naturalWidth && img.naturalHeight) {
+          label.textContent = img.naturalWidth + "×" + img.naturalHeight;
+        }
+      };
+
+      if (img.complete) apply();
+      else img.addEventListener("load", apply);
+    }
+    ["img-input", "img-lr", "img-bicubic", "img-ours"].forEach(updateDims);
+
+    // ---------- Compare Toggle + DOWNLOAD ----------
+    const cmpImg = document.getElementById("cmpImg");
+    const cmpDims = document.getElementById("cmpDims");
+
+    const btnCmpInput = document.getElementById("btnCmpInput");
+    const btnCmpLR = document.getElementById("btnCmpLR");
+    const btnCmpBicubic = document.getElementById("btnCmpBicubic");
+    const btnCmpOurs = document.getElementById("btnCmpOurs");
+    const btnDownloadSelected = document.getElementById("btnDownloadSelected");
+
+    function setActive(btn) {
+      const all = [btnCmpInput, btnCmpLR, btnCmpBicubic, btnCmpOurs];
+      all.forEach(function(b) {
+        if (!b) return;
+        b.className = "px-3 py-2 text-sm bg-zinc-900 text-zinc-200 hover:bg-zinc-800";
+      });
+      if (btn) btn.className = "px-3 py-2 text-sm bg-zinc-100 text-zinc-950 font-semibold";
+    }
+
+    function urlFor(kind) {
+      if (!cmpImg) return null;
+      if (kind === "input") return cmpImg.getAttribute("data-url-input");
+      if (kind === "lr") return cmpImg.getAttribute("data-url-lr") || null;
+      if (kind === "bicubic") return cmpImg.getAttribute("data-url-bicubic") || null;
+      return cmpImg.getAttribute("data-url-ours");
+    }
+
+    function setCmpTo(kind) {
+      if (!cmpImg) return;
+
+      let url = urlFor(kind);
+      if (!url) { kind = "ours"; url = urlFor("ours"); }
+
+      cmpImg.src = url;
+      cmpImg.dataset.kind = kind;
+
+      if (kind === "input") setActive(btnCmpInput);
+      else if (kind === "lr") setActive(btnCmpLR);
+      else if (kind === "bicubic") setActive(btnCmpBicubic);
+      else setActive(btnCmpOurs);
+    }
+
+    function updateCmpDims() {
+      if (!cmpImg || !cmpDims) return;
+      const apply = function() {
+        if (cmpImg.naturalWidth && cmpImg.naturalHeight) {
+          cmpDims.textContent = cmpImg.naturalWidth + "×" + cmpImg.naturalHeight + "px";
+        }
+      };
+      if (cmpImg.complete) apply();
+      else cmpImg.addEventListener("load", apply, { once: true });
+    }
+
+    function downloadSelected() {
+      if (!cmpImg) return;
+      const kind = cmpImg.dataset.kind || "ours";
+      const url = urlFor(kind) || urlFor("ours");
+      if (!url) return;
+
+      const job = cmpImg.getAttribute("data-job") || "result";
+      let name = job + "_ours.png";
+      if (kind === "input") name = job + "_input.png";
+      else if (kind === "lr") name = job + "_lr_degraded.png";
+      else if (kind === "bicubic") name = job + "_bicubic.png";
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    if (cmpImg) {
+      setCmpTo("ours");
+      updateCmpDims();
+      cmpImg.addEventListener("load", updateCmpDims);
+
+      if (btnCmpInput) btnCmpInput.onclick = function(){ setCmpTo("input"); };
+      if (btnCmpLR) btnCmpLR.onclick = function(){ setCmpTo("lr"); };
+      if (btnCmpBicubic) btnCmpBicubic.onclick = function(){ setCmpTo("bicubic"); };
+      if (btnCmpOurs) btnCmpOurs.onclick = function(){ setCmpTo("ours"); };
+
+      if (btnDownloadSelected) btnDownloadSelected.onclick = function(e){
+        e.preventDefault();
+        downloadSelected();
+      };
+
+      // press-and-hold preview input
+      let prevKind = "ours";
+      const pressStart = function() {
+        prevKind = cmpImg.dataset.kind || "ours";
+        setCmpTo("input");
+      };
+      const pressEnd = function() {
+        setCmpTo(prevKind);
+      };
+
+      cmpImg.addEventListener("mousedown", pressStart);
+      window.addEventListener("mouseup", pressEnd);
+
+      cmpImg.addEventListener("touchstart", function(e){ e.preventDefault(); pressStart(); }, { passive: false });
+      window.addEventListener("touchend", pressEnd);
+      window.addEventListener("touchcancel", pressEnd);
+      window.addEventListener("blur", pressEnd);
+    }
+  </script>
+</body>
+</html>
