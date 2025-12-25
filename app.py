@@ -2,7 +2,8 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 
-from pipeline import run_classical_example_sr
+# GÜNCELLEME: Her iki fonksiyonu da import ediyoruz
+from pipeline import run_classical_example_sr, run_edge_based_sr
 
 app = Flask(__name__)
 app.secret_key = "local-dev-secret"
@@ -33,8 +34,8 @@ def run():
     except:
         scale = 2
     
-    if method != "classical":
-        flash("Bu yöntem şimdilik sadece arayüzde var. Classical yöntemi seç.")
+    if method not in ("classical", "edge_based"):
+        flash("Geçersiz yöntem seçildi.")
         return redirect(url_for("index"))
     
     if "image" not in request.files:
@@ -54,32 +55,36 @@ def run():
     save_path = os.path.join(UPLOAD_DIR, filename)
     file.save(save_path)
     
-    if method != "classical":
-        # input'u gösteren şık placeholder result
-        result = {
-            "job_id": "preview",
-            "method": method,
-            "use_degradation": False,
-            "input": f"uploads/{filename}",
-            "lr_degraded": None,
-            "bicubic": None,
-            "ours": None,
-            "metrics": None,
-            "message": "Bu yöntem şimdilik arayüzde var. Sonraki adımda fonksiyonelliğini ekleyeceğiz.",
-        }
-        return render_template("result.html", result=result)
-
-    # Classical çalıştır
+    # İşlem Mantığı
     try:
-        result = run_classical_example_sr(
-            input_path=save_path,
-            use_degradation=use_degradation,
-            target_scale=scale,
-            out_dir=os.path.join("static", "results"),
-        )
-        result["method"] = "classical"
+        if method == "classical":
+            # Arkadaşının Yöntemi
+            result = run_classical_example_sr(
+                input_path=save_path,
+                use_degradation=use_degradation,
+                target_scale=scale,
+                out_dir=os.path.join("static", "results"),
+            )
+            result["method"] = "Classical Method"
+            
+        elif method == "edge_based": 
+            # Senin Yeni Yöntemin
+            result = run_edge_based_sr(
+                input_path=save_path,
+                use_degradation=use_degradation,
+                target_scale=scale,
+                out_dir=os.path.join("static", "results"),
+            )
+            result["method"] = "Optimized Edge-SR"
+            
+        else:
+            flash("Geçersiz yöntem seçildi.")
+            return redirect(url_for("index"))
+
+        # Ortak sonuç parametreleri
         result["scale"] = scale
         return render_template("result.html", result=result)
+        
     except Exception as e:
         flash(f"Çalıştırırken hata oldu: {e}")
         return redirect(url_for("index"))

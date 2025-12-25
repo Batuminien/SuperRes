@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
+from src.edge_based_sr import OptimizedEdgeSR
 
 from src.utils import (
     imread_normalized,
@@ -72,6 +73,79 @@ def run_classical_example_sr(
     
     out_bic = os.path.join(job_dir, "result_bicubic.png")
     out_ours = os.path.join(job_dir, "result_ours.png")
+    imsave_normalized(out_bic, bicubic_rgb)
+    imsave_normalized(out_ours, sr_rgb)
+    
+    if use_degradation:
+        h_out, w_out, _ = sr_rgb.shape
+        hr_rgb_aligned = cv2.resize(hr_rgb, (w_out, h_out), interpolation=cv2.INTER_AREA)
+        
+        p_bic = psnr(hr_rgb_aligned, bicubic_rgb, data_range=1.0)
+        s_bic = ssim(hr_rgb_aligned, bicubic_rgb, data_range=1.0, channel_axis=2)
+        p_our = psnr(hr_rgb_aligned, sr_rgb, data_range=1.0)
+        s_our = ssim(hr_rgb_aligned, sr_rgb, data_range=1.0, channel_axis=2)
+        
+        metrics = {
+            "bicubic": {"psnr": float(p_bic), "ssim": float(s_bic)},
+            "ours": {"psnr": float(p_our), "ssim": float(s_our)},
+        }
+        
+    return {
+        "job_id": job_id,
+        "use_degradation": use_degradation,
+        "input": f"results/{job_id}/input.png",
+        "lr_degraded": f"results/{job_id}/lr_degraded.png" if use_degradation else None,
+        "bicubic": f"results/{job_id}/result_bicubic.png",
+        "ours": f"results/{job_id}/result_ours.png",
+        "metrics": metrics,
+    }
+
+
+def run_edge_based_sr(
+    input_path: str,
+    use_degradation: bool,
+    target_scale: int = 2,
+    out_dir: str = "static/results"
+):
+    """
+    Ebrar yöntemi için pipeline. 
+    Batuhan pipeline'ı ile aynı çıktı formatını (dictionary) üretir.
+    """
+    job_id = str(uuid.uuid4())[:8]
+    job_dir = os.path.join(out_dir, job_id)
+    os.makedirs(job_dir, exist_ok=True)
+    
+    downscale_factor = int(target_scale)
+    
+    # Resmi Oku (Utils'den gelen 0-1 Float RGB)
+    img = imread_normalized(input_path)
+    hr_rgb = img
+    metrics = None
+    
+    # Degradasyon mantığı (Metric hesaplamak için LR üretimi)
+    if use_degradation:
+        h, w, _ = hr_rgb.shape
+        lr_h, lr_w = h // downscale_factor, w // downscale_factor
+        
+        # Basitçe küçült (Simülasyon)
+        lr_rgb = cv2.resize(hr_rgb, (lr_w, lr_h), interpolation=cv2.INTER_AREA)
+        imsave_normalized(os.path.join(job_dir, "lr_degraded.png"), np.clip(lr_rgb, 0, 1))
+    else:
+        lr_rgb = img
+        
+    imsave_normalized(os.path.join(job_dir, "input.png"), np.clip(img, 0, 1))
+    
+    # --- SENİN YÖNTEMİN ---
+    solver = OptimizedEdgeSR(scale_factor=target_scale)
+    sr_rgb = solver.upscale(lr_rgb, use_ensemble=True) # Ensemble açık: daha kaliteli
+    
+    # Bicubic Referans (Karşılaştırma için)
+    h_sr, w_sr, _ = sr_rgb.shape
+    bicubic_rgb = cv2.resize(lr_rgb, (w_sr, h_sr), interpolation=cv2.INTER_CUBIC)
+    
+    out_bic = os.path.join(job_dir, "result_bicubic.png")
+    out_ours = os.path.join(job_dir, "result_ours.png")
+    
     imsave_normalized(out_bic, bicubic_rgb)
     imsave_normalized(out_ours, sr_rgb)
     
