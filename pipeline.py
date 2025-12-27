@@ -5,6 +5,7 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 from src.edge_based_sr import OptimizedEdgeSR
+from src.wavelet_ibp_sr import run_wavelet_ibp_sr
 
 from src.utils import (
     imread_normalized,
@@ -107,10 +108,6 @@ def run_edge_based_sr(
     target_scale: int = 2,
     out_dir: str = "static/results"
 ):
-    """
-    Ebrar yöntemi için pipeline. 
-    Batuhan pipeline'ı ile aynı çıktı formatını (dictionary) üretir.
-    """
     job_id = str(uuid.uuid4())[:8]
     job_dir = os.path.join(out_dir, job_id)
     os.makedirs(job_dir, exist_ok=True)
