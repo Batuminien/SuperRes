@@ -21,6 +21,7 @@ def index():
 @app.post("/run")
 def run():
     method = request.form.get("method", "classical")
+    print("DEBUG method:", repr(method))
     metric = request.form.get("metric", "off")
     use_degradation = (metric == "on")
 
