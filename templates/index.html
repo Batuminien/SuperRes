@@ -117,29 +117,6 @@
       btn.disabled = true;
       btn.classList.add("opacity-70", "cursor-not-allowed");
     });
-
-    const methodSelect = document.getElementById("methodSelect");
-    const degContainer = document.getElementById("degContainer");
-    const degCheckbox = document.getElementById("degCheckbox");
-
-    function updateDegradationState() {
-      const val = methodSelect.value;
-
-      if (val == "wavelet_ibp") {
-        degCheckbox.checked = true;
-        degCheckbox.disabled = true;
-
-        degContainer.classList.add("opacity-50", "cursor-not-allowed");
-      } else {
-        degCheckbox.disabled = false;
-        degContainer.classList.remove("opacity-50", "cursor-not-allowed");
-      }
-    }
-
-    if (methodSelect && degCheckbox) {
-      methodSelect.addEventListener("change", updateDegradationState);
-      updateDegradationState();
-    }
   </script>
 </body>
 </html>

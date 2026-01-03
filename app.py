@@ -22,11 +22,7 @@ def index():
 def run():
     method = request.form.get("method", "classical")
     deg_val = request.form.get("use_degradation", "off")
-    
-    if method != "classical":
-        use_degradation = True
-    else:
-        use_degradation = (deg_val == "on")
+    use_degradation = (deg_val == "on")
 
     scale_raw = request.form.get("scale", "2")
     try:
