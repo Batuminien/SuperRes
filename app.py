@@ -22,9 +22,13 @@ def index():
 @app.post("/run")
 def run():
     method = request.form.get("method", "classical")
-    metric = request.form.get("metric", "off")
-    use_degradation = (metric == "on")
+    deg_val = request.form.get("use_degradation", "off")
     
+    if method != "classical":
+        use_degradation = True
+    else:
+        use_degradation = (deg_val == "on")
+
     scale_raw = request.form.get("scale", "2")
     try:
         scale = int(scale_raw)
@@ -55,11 +59,24 @@ def run():
     file.save(save_path)
     
     if method != "classical":
-        # input'u gösteren şık placeholder result
         result = {
             "job_id": "preview",
             "method": method,
-            "use_degradation": False,
+            "use_degradation": True,
+            "input": f"uploads/{filename}",
+            "lr_degraded": None,
+            "bicubic": None,
+            "ours": None,
+            "metrics": None,
+            "message": "Bu yöntem şimdilik arayüzde var. Sonraki adımda fonksiyonelliğini ekleyeceğiz.",
+        }
+        return render_template("result.html", result=result)
+    
+    else:
+        result = {
+            "job_id": "preview",
+            "method": method,
+            "use_degradation": use_degradation,
             "input": f"uploads/{filename}",
             "lr_degraded": None,
             "bicubic": None,

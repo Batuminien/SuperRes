@@ -22,7 +22,7 @@
         <h1 class="text-2xl font-semibold tracking-tight">Super-Resolution</h1>
       </div>
 
-      <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-200">Version 1.3</span>
+      <span class="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-200">Version 2.0</span>
     </div>
 
     {% with messages = get_flashed_messages() %}
@@ -49,25 +49,24 @@
         <!-- Method -->
         <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
           <label class="block text-sm font-medium text-zinc-200">Method</label>
-          <select name="method"
+          <select id="methodSelect"name="method"
                   class="mt-2 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm">
             <option value="classical">Classical + Example Based SR</option>
-            <option value="wavelet">Wavelet</option>
-            <option value="other">Ebrar</option>
+            <option value="wavelet">Wavelet + IBP</option>
+            <option value="other">Edge-Based SR</option>
           </select>
-          <p class="mt-2 text-xs text-zinc-400">For now, only Classical+Example Based SR is working.</p>
         </div>
 
         <!-- Metric -->
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
+        <div id="degContainer" class="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-zinc-200">Metric</p>
-              <p class="text-xs text-zinc-400">Calculate PSNR/SSIM</p>
+              <p class="text-sm font-medium text-zinc-200">Use Degradation</p>
+              <p class="text-xs text-zinc-400">Downscale input first. It is required for calculate metrics. Otherwise, image will be used as a LR image.</p>
             </div>
 
             <label class="inline-flex items-center gap-2 cursor-pointer">
-              <input name="metric" type="checkbox" class="h-4 w-4 accent-zinc-200" />
+              <input id="degCheckbox" name="use_degradation" type="checkbox" class="h-4 w-4 accent-zinc-200" />
               <span class="text-sm text-zinc-200">On</span>
             </label>
           </div>
@@ -118,6 +117,29 @@
       btn.disabled = true;
       btn.classList.add("opacity-70", "cursor-not-allowed");
     });
+
+    const methodSelect = document.getElementById("methodSelect");
+    const degContainer = document.getElementById("degContainer");
+    const degCheckbox = document.getElementById("degCheckbox");
+
+    function updateDegradationState() {
+      const val = methodSelect.value;
+
+      if (val !== "classical") {
+        degCheckbox.checked = true;
+        degCheckbox.disabled = true;
+
+        degContainer.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        degCheckbox.disabled = false;
+        degContainer.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+    }
+
+    if (methodSelect && degCheckbox) {
+      methodSelect.addEventListener("change", updateDegradationState);
+      updateDegradationState();
+    }
   </script>
 </body>
 </html>
