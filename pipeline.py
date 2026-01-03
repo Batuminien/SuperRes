@@ -6,6 +6,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
 from src.edge_based_sr import OptimizedEdgeSR
 from src.wavelet_ibp_sr import run_wavelet_ibp_sr
+from typing import Any, Dict
 
 from src.utils import (
     imread_normalized,
