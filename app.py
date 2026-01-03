@@ -21,9 +21,12 @@ def index():
 @app.post("/run")
 def run():
     method = request.form.get("method", "classical")
-    print("DEBUG method:", repr(method))
-    metric = request.form.get("metric", "off")
-    use_degradation = (metric == "on")
+    deg_val = request.form.get("use_degradation", "off")
+    
+    if method != "classical":
+        use_degradation = True
+    else:
+        use_degradation = (deg_val == "on")
 
     scale_raw = request.form.get("scale", "2")
     try:
