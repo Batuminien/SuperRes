@@ -100,16 +100,15 @@ def run_classical_example_sr(
         "metrics": metrics,
     }
 
-
 def run_edge_based_sr(
     input_path: str,
     use_degradation: bool,
     target_scale: int = 2,
+    use_ensemble: bool = True,  #  Hız/Kalite dengesi için
     out_dir: str = "static/results"
 ):
     """
-    Ebrar yöntemi için pipeline. 
-    Batuhan pipeline'ı ile aynı çıktı formatını (dictionary) üretir.
+    Pipeline to run the edge-based sr
     """
     job_id = str(uuid.uuid4())[:8]
     job_dir = os.path.join(out_dir, job_id)
@@ -117,29 +116,40 @@ def run_edge_based_sr(
     
     downscale_factor = int(target_scale)
     
-    # Resmi Oku (Utils'den gelen 0-1 Float RGB)
+    # Read image (0-1 Float RGB)
     img = imread_normalized(input_path)
+    
+    #  Crop Modulo (Dimension Alignment) 
+    # If degradation is used, crop the image to multiples of the scale factor.
+    # This ensures correct comparison with "Ground Truth" 
+    if use_degradation:
+        h, w, _ = img.shape
+        h_new = h - (h % downscale_factor)
+        w_new = w - (w % downscale_factor)
+        img = img[:h_new, :w_new, :]
+        
     hr_rgb = img
     metrics = None
     
-    # Degradasyon mantığı (Metric hesaplamak için LR üretimi)
+    # Degradation logic
     if use_degradation:
         h, w, _ = hr_rgb.shape
         lr_h, lr_w = h // downscale_factor, w // downscale_factor
         
-        # Basitçe küçült (Simülasyon)
+        # Simulation: High Res -> Low Res
         lr_rgb = cv2.resize(hr_rgb, (lr_w, lr_h), interpolation=cv2.INTER_AREA)
         imsave_normalized(os.path.join(job_dir, "lr_degraded.png"), np.clip(lr_rgb, 0, 1))
     else:
+        # If no degradation, the input image is considered LR
         lr_rgb = img
         
     imsave_normalized(os.path.join(job_dir, "input.png"), np.clip(img, 0, 1))
-    
-    # --- SENİN YÖNTEMİN ---
+    #call the edge based sr
     solver = OptimizedEdgeSR(scale_factor=target_scale)
-    sr_rgb = solver.upscale(lr_rgb, use_ensemble=True) # Ensemble açık: daha kaliteli
+    # ensemble is True for better quality, False for faster processing
+    sr_rgb = solver.upscale(lr_rgb, use_ensemble=use_ensemble)
     
-    # Bicubic Referans (Karşılaştırma için)
+    # bicubic for comparison making two images same size for fair comparision
     h_sr, w_sr, _ = sr_rgb.shape
     bicubic_rgb = cv2.resize(lr_rgb, (w_sr, h_sr), interpolation=cv2.INTER_CUBIC)
     
@@ -149,14 +159,24 @@ def run_edge_based_sr(
     imsave_normalized(out_bic, bicubic_rgb)
     imsave_normalized(out_ours, sr_rgb)
     
+    # Metrik Hesaplama
     if use_degradation:
-        h_out, w_out, _ = sr_rgb.shape
-        hr_rgb_aligned = cv2.resize(hr_rgb, (w_out, h_out), interpolation=cv2.INTER_AREA)
+        #metrics on Y channel
+        def to_y_channel(img_rgb):
+            # from RGB to Y channel then return
+            img_u8 = (np.clip(img_rgb, 0, 1) * 255).astype(np.uint8)
+            img_y = cv2.cvtColor(img_u8, cv2.COLOR_RGB2YCrCb)[:,:,0]
+            return img_y.astype(np.float32) / 255.0
+
+        hr_y = to_y_channel(hr_rgb)
+        bic_y = to_y_channel(bicubic_rgb)
+        sr_y = to_y_channel(sr_rgb)
+
+        p_bic = psnr(hr_y, bic_y, data_range=1.0)
+        s_bic = ssim(hr_y, bic_y, data_range=1.0) # channel_axis gerekmez, tek kanal
         
-        p_bic = psnr(hr_rgb_aligned, bicubic_rgb, data_range=1.0)
-        s_bic = ssim(hr_rgb_aligned, bicubic_rgb, data_range=1.0, channel_axis=2)
-        p_our = psnr(hr_rgb_aligned, sr_rgb, data_range=1.0)
-        s_our = ssim(hr_rgb_aligned, sr_rgb, data_range=1.0, channel_axis=2)
+        p_our = psnr(hr_y, sr_y, data_range=1.0)
+        s_our = ssim(hr_y, sr_y, data_range=1.0)
         
         metrics = {
             "bicubic": {"psnr": float(p_bic), "ssim": float(s_bic)},
