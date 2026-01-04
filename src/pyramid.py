@@ -8,34 +8,51 @@ def create_gaussian_pyramid(
     max_depth=6
 ):
     """
-    It creates Image Cascade structure from the paper.
+    Generates a Gaussian pyramid (Image Cascade) for multi-scale analysis.
+    
+    This function iteratively blurs and downsamples the input image to create
+    a pyramid structure. This is crucial for patch-based SR methods (like Glasner et al.)
+    to find similar patches across different scales within the same image.
     
     Args:
-        image (numpy array): Just Y channel (2D array).
-        scale_factor (float): Reducing factor (it is 1.25^s in paper).
-        min_size (int): Stop when the image being little than that parameter.
-        max_depth (int): Maximum depth (it is recommended as 6 in the paper).
-        
+        image (np.ndarray): Input 2D grayscale image (Y channel) with shape (H, W).
+        scale_factor (float, optional): The downscaling factor between pyramid levels. Paper typically uses 1.25. Defaults to 1.25
+        min_size (int, optional): The minimum allowed dimension (height or width) for a pyramid level.
+                                  Recursion stops if the image gets smaller than this. Defaults to 32.
+        max_depth (int, optional): The maximum number of downscaled levels to generate. Defaults to 6
+    
     Returns:
-        list: Reduced image lists [I_0, I_-1, I_-2, ...]
+        List[np.ndarray]: A list containing the image pyramid, starting from the original
+                          image [Level 0] down to the smallest scale [Level -N]
     """
     
+    # Initialize the pyramid with the original high-resolution image (Level 0)
     pyramid = [image.astype(np.float32)]
     current_img = image.astype(np.float32)
     
     for i in range(1, max_depth + 1):
         h, w = current_img.shape
         
-        #calculate new sizes
+        # Calculate new dimensions based on the scale factor
         new_h = int(h / scale_factor)
         new_w = int(w / scale_factor)
         
-        #safety check
+        # Safety Check: Stop if the image becomes too small
         if new_h < min_size or new_w < min_size:
             break
         
+        # Calculate the standart deviation (sigma) for the Gaussian kernel.
+        # According to sampling theory, to prevent aliasing during downsampling,
+        # the image must be low-pass filtered. The sigma is derived from the scale factor:
+        # sigma = sqrt(s^2 - 1)
         sigma = np.sqrt(scale_factor**2 - 1.0)
+        
+        # Apply Gaussian Blur 
         blurred = cv2.GaussianBlur(current_img, (0, 0), sigmaX=sigma, sigmaY=sigma)
+        
+        # Downsample the image
+        # Note: Since we applied a strong Gaussian blur, INTER_NEAREST is acceptable here,
+        # though INTER_LINEAR or INTER_AREA is often preferred in standard resize operations.
         current_img = cv2.resize(blurred, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
         
         pyramid.append(current_img)
