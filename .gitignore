@@ -6,3 +6,6 @@ __pycache__/
 # Local uploads/results
 static/uploads/
 static/results/
+
+benchmark.py
+benchmark_outputs/
