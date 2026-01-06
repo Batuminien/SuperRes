@@ -94,8 +94,7 @@ class OptimizedEdgeSR:
     def _coherence_shock_filter(self, img, sigma=1.0, rho=2.0, dt=0.05, iterations=1):
         """Coherence-Enhancing Shock Filter (Weickert, 2003).
 
-        yönlü ikinci türev kullanarak akış yönünde
-        keskinleştirme yapar; damar benzeri yapıları koparmadan güçlendirir.
+        uses directional second derivatives along flow lines to enhance edges
         """
         img_shock = img.copy()
         
