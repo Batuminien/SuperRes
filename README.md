@@ -120,18 +120,6 @@ SuperRes/
 
 ---
 
-## Running Benchmarks
-
-To evaluate performance on standard datasets:
-
-```bash
-python benchmark.py
-```
-
-This will run the selected method on Set5/Set14 images and output PSNR/SSIM metrics.
-
----
-
 ##  Method Selection Guide
 
 | Method | Best For | Speed | Quality |
