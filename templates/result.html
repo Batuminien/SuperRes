@@ -82,6 +82,13 @@
       {% endif %}
 
       {% if result.metrics %}
+        {% set b_psnr = result.metrics.bicubic.psnr %}
+        {% set o_psnr = result.metrics.ours.psnr %}
+        {% set b_ssim = result.metrics.bicubic.ssim %}
+        {% set o_ssim = result.metrics.ours.ssim %}
+
+        {% set win_style = "border-emerald-500/50 bg-emerald-900/10" %}
+        {% set lose_style = "border-zinc-800 bg-zinc-900/40" %}
         <div class="mt-5 grid md:grid-cols-2 gap-4">
           <!-- Bicubic -->
           <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
@@ -90,12 +97,12 @@
               <span class="text-xs px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">Metrics</span>
             </div>
             <div class="mt-4 grid grid-cols-2 gap-3">
-              <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+              <div class="rounded-xl px-4 py-3 border {{ win_style if b_psnr > o_psnr else lose_style}}">
                 <p class="text-xs text-zinc-400">PSNR</p>
                 <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.2f"|format(result.metrics.bicubic.psnr) }}
                   <span class="text-sm text-zinc-400">dB</span></p>
               </div>
-              <div class="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+              <div class="rounded-xl px-4 py-3 border {{ win_style if b_ssim > o_ssim else lose_style}}">
                 <p class="text-xs text-zinc-400">SSIM</p>
                 <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.4f"|format(result.metrics.bicubic.ssim) }}</p>
               </div>
@@ -106,15 +113,15 @@
           <div class="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
             <div class="flex items-center justify-between">
               <p class="text-sm font-semibold text-zinc-200">Our SR</p>
-              <span class="text-xs px-2 py-1 rounded-full bg-emerald-900/30 border border-emerald-800 text-emerald-200">Metrics</span>
+              <span class="text-xs px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">Metrics</span>
             </div>
             <div class="mt-4 grid grid-cols-2 gap-3">
-              <div class="rounded-xl border border-emerald-900/60 bg-zinc-900/40 px-4 py-3">
+              <div class="rounded-xl px-4 py-3 border {{ win_style if o_psnr > b_psnr else lose_style }}">
                 <p class="text-xs text-zinc-400">PSNR</p>
                 <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.2f"|format(result.metrics.ours.psnr) }}
                   <span class="text-sm text-zinc-400">dB</span></p>
               </div>
-              <div class="rounded-xl border border-emerald-900/60 bg-zinc-900/40 px-4 py-3">
+              <div class="rounded-xl border px-4 py-3 border {{ win_style if o_ssim > b_ssim else lose_style }}">
                 <p class="text-xs text-zinc-400">SSIM</p>
                 <p class="mt-1 text-xl font-semibold text-zinc-100">{{ "%.4f"|format(result.metrics.ours.ssim) }}</p>
               </div>
