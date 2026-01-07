@@ -53,8 +53,6 @@ A frequency-domain approach using wavelet decomposition:
 SuperRes/
 ├── app.py                 # Flask web application
 ├── pipeline.py            # SR pipeline orchestration
-├── benchmark.py           # Benchmark script for Set5/Set14
-├── deneme.py              # Test/debug script
 ├── requirements.txt       # Python dependencies
 │
 ├── src/
